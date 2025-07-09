@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, BookOpen, Calendar } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default async function DashboardPage() {
   // Check authentication - redirect if not authenticated
@@ -23,32 +24,35 @@ export default async function DashboardPage() {
     .orderBy(decksTable.updatedAt);
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">
-            Manage your flashcard decks and track your progress
-          </p>
-        </div>
-        <Button size="lg" className="gap-2">
-          <Plus className="h-4 w-4" />
-          Create New Deck
-        </Button>
-      </div>
+    <main className="container mx-auto px-4 py-8">
+      {/* Header Section */}
+      <Card className="mb-8 border-0 shadow-none bg-transparent">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 px-0">
+          <section>
+            <CardTitle className="text-3xl font-bold text-foreground">Dashboard</CardTitle>
+            <CardDescription className="mt-1">
+              Manage your flashcard decks and track your progress
+            </CardDescription>
+          </section>
+          <Button size="lg" className="gap-2">
+            <Plus className="h-4 w-4" />
+            Create New Deck
+          </Button>
+        </CardHeader>
+      </Card>
 
       {/* Stats Section */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Decks</CardTitle>
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{decks.length}</div>
-            <p className="text-xs text-muted-foreground">
+            <CardTitle className="text-2xl font-bold">{decks.length}</CardTitle>
+            <CardDescription className="text-xs">
               Flashcard decks created
-            </p>
+            </CardDescription>
           </CardContent>
         </Card>
 
@@ -58,10 +62,10 @@ export default async function DashboardPage() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">
+            <CardTitle className="text-2xl font-bold">0</CardTitle>
+            <CardDescription className="text-xs">
               Cards across all decks
-            </p>
+            </CardDescription>
           </CardContent>
         </Card>
 
@@ -71,31 +75,33 @@ export default async function DashboardPage() {
             <Badge variant="secondary">Coming Soon</Badge>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">
+            <CardTitle className="text-2xl font-bold">0</CardTitle>
+            <CardDescription className="text-xs">
               Days in a row
-            </p>
+            </CardDescription>
           </CardContent>
         </Card>
-      </div>
+      </section>
 
       {/* Decks Section */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-semibold">Your Decks</h2>
-          <Button variant="outline" size="sm">
-            View All
-          </Button>
-        </div>
+      <section className="space-y-6">
+        <Card className="border-0 shadow-none bg-transparent">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 px-0 pb-4">
+            <CardTitle className="text-2xl font-semibold">Your Decks</CardTitle>
+            <Button variant="outline" size="sm">
+              View All
+            </Button>
+          </CardHeader>
+        </Card>
 
         {decks.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No decks yet</h3>
-              <p className="text-muted-foreground text-center mb-4">
+              <CardTitle className="text-lg font-semibold mb-2">No decks yet</CardTitle>
+              <CardDescription className="text-center mb-4">
                 Create your first flashcard deck to get started with studying
-              </p>
+              </CardDescription>
               <Button className="gap-2">
                 <Plus className="h-4 w-4" />
                 Create Your First Deck
@@ -103,14 +109,14 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {decks.map((deck) => (
               <Card key={deck.id} className="hover:shadow-md transition-shadow cursor-pointer">
                 <CardHeader>
-                  <div className="flex items-center justify-between">
+                  <section className="flex items-center justify-between">
                     <CardTitle className="text-lg">{deck.name}</CardTitle>
                     <Badge variant="outline">0 cards</Badge>
-                  </div>
+                  </section>
                   {deck.description && (
                     <CardDescription className="line-clamp-2">
                       {deck.description}
@@ -118,18 +124,20 @@ export default async function DashboardPage() {
                   )}
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <span>Created {new Date(deck.createdAt).toLocaleDateString()}</span>
+                  <section className="flex items-center justify-between text-sm text-muted-foreground">
+                    <CardDescription className="text-sm">
+                      Created {new Date(deck.createdAt).toLocaleDateString()}
+                    </CardDescription>
                     <Button variant="ghost" size="sm">
                       Study
                     </Button>
-                  </div>
+                  </section>
                 </CardContent>
               </Card>
             ))}
-          </div>
+          </section>
         )}
-      </div>
-    </div>
+      </section>
+    </main>
   );
 } 

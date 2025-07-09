@@ -6,7 +6,9 @@ alwaysApply: true
 # shadcn/ui Project Guidelines
 
 ## Project Overview
-FlashyCardy is a Next.js 15 application built with shadcn/ui components, TypeScript, and Tailwind CSS v4. All UI elements should use shadcn/ui components and follow the established patterns.
+FlashyCardy is a Next.js 15 application built with shadcn/ui components, TypeScript, and Tailwind CSS v4. 
+
+**CRITICAL REQUIREMENT: ONLY shadcn/ui components are allowed for ALL UI elements in this project. NO custom UI components should be created under any circumstances.**
 
 ## Configuration
 - **shadcn/ui Style**: New York variant 
@@ -14,6 +16,58 @@ FlashyCardy is a Next.js 15 application built with shadcn/ui components, TypeScr
 - **Icons**: Lucide React
 - **CSS Variables**: Enabled for theming
 - **Components Config**: [components.json](mdc:components.json)
+
+## STRICT UI COMPONENT RULES
+
+### ABSOLUTE REQUIREMENTS
+1. **ONLY shadcn/ui components** are permitted for ALL UI elements
+2. **NO custom UI components** should be created - if a component doesn't exist in shadcn/ui, request it to be added or use existing primitives
+3. **NO direct HTML elements** for UI (div, button, input, etc.) - always use shadcn/ui equivalents
+4. **NO third-party UI libraries** (Material-UI, Ant Design, Chakra, etc.)
+5. **This project is in dark mode** Make sure there are no dark colored text on dark backgrounds (and vice versa).
+
+### Clerk Authentication Integration
+**REQUIRED PATTERN for Clerk authentication:**
+
+- **Sign In/Sign Up Buttons**: MUST use shadcn/ui Button component
+- **Authentication Modal**: MUST use shadcn/ui Dialog component to launch Clerk authentication
+- **NO Clerk default UI components** - wrap all Clerk functionality in shadcn/ui components
+
+```tsx
+// ✅ CORRECT - Clerk with shadcn/ui
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
+import { SignIn, SignUp } from "@clerk/nextjs"
+
+export function AuthButton() {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="default">Sign In</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <SignIn />
+      </DialogContent>
+    </Dialog>
+  )
+}
+```
+
+```tsx
+// ❌ FORBIDDEN - Direct Clerk UI components
+import { SignInButton } from "@clerk/nextjs"
+
+export function WrongAuthButton() {
+  return <SignInButton />  // DON'T USE
+}
+```
+
+```tsx
+// ❌ FORBIDDEN - Custom UI components
+export function CustomButton() {
+  return <button className="custom-button">Sign In</button>  // DON'T CREATE
+}
+```
 
 ## Quick Commands
 **Install shadcn/ui components when missing:**
@@ -25,10 +79,11 @@ Common examples: `button`, `card`, `form`, `dialog`, `input`, `label`, `textarea
 ## Component Architecture
 
 ### UI Components
-- All UI components should be installed via `npx shadcn@latest add [component-name]`
-- Custom components should extend shadcn/ui base components
-- Use Class Variance Authority (CVA) for component variants
-- Components live in `@/components/ui/` (aliased path)
+- **ONLY** shadcn/ui components are allowed - install via `npx shadcn@latest add [component-name]`
+- **FORBIDDEN**: Creating custom UI components or extending shadcn/ui components
+- **FORBIDDEN**: Direct HTML elements for UI (button, input, div for UI, etc.)
+- Use existing shadcn/ui components and their built-in variants only
+- All UI components live in `@/components/ui/` (installed via shadcn/ui CLI only)
 
 ### Component Patterns
 ```tsx
@@ -76,7 +131,7 @@ Configure imports using these aliases from [components.json](mdc:components.json
 ## Development Workflow
 
 ### Adding New Components
-1. **Install shadcn/ui components** when not available using:
+1. **ONLY install shadcn/ui components** using:
    ```bash
    npx shadcn@latest add [component-name]
    ```
@@ -86,9 +141,14 @@ Configure imports using these aliases from [components.json](mdc:components.json
    - `npx shadcn@latest add form` - Install form component
    - `npx shadcn@latest add dialog` - Install dialog component
 
-2. If component doesn't exist in shadcn/ui, build on top of existing primitives
-3. Follow the established naming and structure conventions
-4. Use TypeScript for all components with proper prop types
+2. **If component doesn't exist in shadcn/ui**: 
+   - **DO NOT** create custom components
+   - **DO NOT** build on top of existing primitives
+   - Use existing shadcn/ui components to achieve the desired functionality
+   - Request the component to be added to shadcn/ui if absolutely necessary
+
+3. **NEVER** create files in `@/components/ui/` manually
+4. **NEVER** extend or modify shadcn/ui components
 
 ### Icons
 - Use Lucide React icons exclusively
@@ -139,15 +199,52 @@ src/
 - **Add Component**: `npx shadcn@latest add [component-name]`
 - **Lint**: `npm run lint`
 
+## FORBIDDEN PRACTICES
+
+### Absolutely Prohibited
+❌ **Creating custom UI components** of any kind
+❌ **Modifying shadcn/ui components** source code
+❌ **Using direct HTML elements** for UI (button, input, div for layout/UI, etc.)
+❌ **Installing other UI libraries** (Material-UI, Ant Design, Chakra, etc.)
+❌ **Using Clerk's default UI components** directly (SignInButton, UserButton, etc.)
+❌ **Creating custom CSS classes** for UI styling
+❌ **Extending shadcn/ui components** with additional functionality
+❌ **Building custom components** on top of shadcn/ui primitives
+
+### Examples of Forbidden Code
+```tsx
+// ❌ FORBIDDEN - Custom UI component
+export function CustomCard() {
+  return <div className="custom-card">...</div>
+}
+
+// ❌ FORBIDDEN - Direct HTML UI elements
+export function MyButton() {
+  return <button onClick={...}>Click me</button>
+}
+
+// ❌ FORBIDDEN - Extending shadcn/ui components
+import { Button as ShadcnButton } from "@/components/ui/button"
+export function EnhancedButton() {
+  return <ShadcnButton className="enhanced-styles">...</ShadcnButton>
+}
+
+// ❌ FORBIDDEN - Direct Clerk UI
+import { SignInButton } from "@clerk/nextjs"
+export function Auth() {
+  return <SignInButton />
+}
+```
+
 ## Best Practices
-1. Always use shadcn/ui components as the foundation
-2. Extend components through composition, not modification
-3. Maintain design system consistency
-4. Use semantic HTML elements
-5. Test components for accessibility
-6. Keep components small and focused
-7. Document complex component APIs
-8. Use proper TypeScript types for all props
+1. **ONLY** use shadcn/ui components for ALL UI elements
+2. Use shadcn/ui component variants and built-in props only
+3. Maintain strict design system consistency through shadcn/ui only
+4. Combine existing shadcn/ui components for complex layouts
+5. Test shadcn/ui components for accessibility (they are pre-built for accessibility)
+6. Use shadcn/ui Dialog for ALL modal functionality including Clerk auth
+7. Use shadcn/ui Button for ALL clickable elements
+8. Use proper TypeScript types from shadcn/ui components
 
 
 
