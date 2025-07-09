@@ -1,0 +1,153 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# shadcn/ui Project Guidelines
+
+## Project Overview
+FlashyCardy is a Next.js 15 application built with shadcn/ui components, TypeScript, and Tailwind CSS v4. All UI elements should use shadcn/ui components and follow the established patterns.
+
+## Configuration
+- **shadcn/ui Style**: New York variant 
+- **Base Color**: Stone
+- **Icons**: Lucide React
+- **CSS Variables**: Enabled for theming
+- **Components Config**: [components.json](mdc:components.json)
+
+## Quick Commands
+**Install shadcn/ui components when missing:**
+```bash
+npx shadcn@latest add [component-name]
+```
+Common examples: `button`, `card`, `form`, `dialog`, `input`, `label`, `textarea`, `select`
+
+## Component Architecture
+
+### UI Components
+- All UI components should be installed via `npx shadcn@latest add [component-name]`
+- Custom components should extend shadcn/ui base components
+- Use Class Variance Authority (CVA) for component variants
+- Components live in `@/components/ui/` (aliased path)
+
+### Component Patterns
+```tsx
+// Use cva for variants
+import { cva, type VariantProps } from "class-variance-authority"
+import { cn } from "@/lib/utils"
+
+const buttonVariants = cva(
+  "base-classes",
+  {
+    variants: {
+      variant: {
+        default: "default-classes",
+        destructive: "destructive-classes"
+      }
+    }
+  }
+)
+
+// Always use cn() for conditional classes
+<div className={cn("base-classes", conditional && "extra-classes")} />
+```
+
+### Styling Guidelines
+- **Primary**: Use Tailwind utility classes
+- **Theming**: Leverage CSS custom properties from [globals.css](mdc:src/app/globals.css)
+- **Responsive**: Mobile-first approach with Tailwind breakpoints
+- **Colors**: Use semantic color tokens (primary, secondary, muted, accent, destructive)
+- **Spacing**: Follow Tailwind's spacing scale
+- **Typography**: Use shadcn/ui typography components when available
+
+### Path Aliases
+Configure imports using these aliases from [components.json](mdc:components.json):
+- `@/components` → `src/components`
+- `@/components/ui` → `src/components/ui`  
+- `@/lib` → `src/lib`
+- `@/lib/utils` → `src/lib/utils`
+- `@/hooks` → `src/hooks`
+
+### Utility Functions
+- **Class merging**: Use `cn()` from [utils.ts](mdc:src/lib/utils.ts) for conditional classes
+- **Tailwind merge**: Properly merge conflicting Tailwind classes
+- **clsx**: Handle conditional class logic
+
+## Development Workflow
+
+### Adding New Components
+1. **Install shadcn/ui components** when not available using:
+   ```bash
+   npx shadcn@latest add [component-name]
+   ```
+   **Examples:**
+   - `npx shadcn@latest add button` - Install button component
+   - `npx shadcn@latest add card` - Install card component  
+   - `npx shadcn@latest add form` - Install form component
+   - `npx shadcn@latest add dialog` - Install dialog component
+
+2. If component doesn't exist in shadcn/ui, build on top of existing primitives
+3. Follow the established naming and structure conventions
+4. Use TypeScript for all components with proper prop types
+
+### Icons
+- Use Lucide React icons exclusively
+- Import specific icons: `import { IconName } from "lucide-react"`
+- Keep icon usage consistent across the application
+
+### Forms & Validation
+- Use shadcn/ui form components with React Hook Form
+- Implement proper validation with Zod schemas
+- Follow accessibility guidelines for form inputs
+
+## Code Quality
+
+### TypeScript
+- Strict type checking enabled
+- Use proper component prop interfaces
+- Leverage VariantProps for component variants
+- No `any` types - use proper typing
+
+### Performance
+- Use React Server Components where appropriate (RSC enabled)
+- Implement proper loading states
+- Optimize re-renders with proper memoization
+
+### Accessibility
+- All components should be keyboard navigable
+- Proper ARIA attributes
+- Color contrast compliance
+- Screen reader friendly
+
+## File Structure
+```
+src/
+├── app/                 # Next.js App Router
+│   ├── globals.css     # Global styles & CSS variables
+│   ├── layout.tsx      # Root layout
+│   └── page.tsx        # Pages
+├── components/
+│   └── ui/             # shadcn/ui components
+├── lib/
+│   └── utils.ts        # Utility functions
+└── hooks/              # Custom React hooks
+```
+
+## Commands
+- **Dev**: `npm run dev` (uses Turbopack)
+- **Build**: `npm run build`
+- **Add Component**: `npx shadcn@latest add [component-name]`
+- **Lint**: `npm run lint`
+
+## Best Practices
+1. Always use shadcn/ui components as the foundation
+2. Extend components through composition, not modification
+3. Maintain design system consistency
+4. Use semantic HTML elements
+5. Test components for accessibility
+6. Keep components small and focused
+7. Document complex component APIs
+8. Use proper TypeScript types for all props
+
+
+

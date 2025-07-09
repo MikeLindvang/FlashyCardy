@@ -1,0 +1,62 @@
+---
+alwaysApply: true
+---
+# Database Interaction Rules
+
+## Required: Drizzle ORM Only
+
+ALL database interactions in FlashyCardy MUST use Drizzle ORM with the established schema from [schema.ts](mdc:src/db/schema.ts).
+
+## Database Schema
+- **Tables**: Use `decksTable` and `cardsTable` from [schema.ts](mdc:src/db/schema.ts)
+- **Types**: Use exported TypeScript types (`Deck`, `NewDeck`, `Card`, `NewCard`)
+- **Relations**: Leverage the defined `decksRelations` and `cardsRelations`
+- **Database Instance**: Import from [index.ts](mdc:src/db/index.ts)
+
+## Required Patterns
+
+### Queries
+```typescript
+import { db } from "@/db";
+import { decksTable, cardsTable } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
+
+// ✅ Correct - Use Drizzle queries
+const decks = await db.select().from(decksTable).where(eq(decksTable.userId, userId));
+const cards = await db.select().from(cardsTable).where(eq(cardsTable.deckId, deckId));
+```
+
+### Inserts
+```typescript
+import { db } from "@/db";
+import { decksTable, type NewDeck } from "@/db/schema";
+
+// ✅ Correct - Use Drizzle insert with typed data
+const newDeck: NewDeck = { userId, name, description };
+const [deck] = await db.insert(decksTable).values(newDeck).returning();
+```
+
+### Updates
+```typescript
+import { db } from "@/db";
+import { cardsTable } from "@/db/schema";
+import { eq } from "drizzle-orm";
+
+// ✅ Correct - Use Drizzle update
+await db.update(cardsTable)
+  .set({ front, back, updatedAt: new Date() })
+  .where(eq(cardsTable.id, cardId));
+```
+
+## Forbidden Practices
+- ❌ Raw SQL queries outside of Drizzle
+- ❌ Direct database client usage
+- ❌ ORM-bypass operations
+- ❌ Hardcoded table/column names (use schema exports)
+
+## Best Practices
+- Always use TypeScript types from schema
+- Leverage Drizzle's type safety
+- Use proper error handling with database operations
+- Import database operations from established patterns
+- Use transactions for multi-table operations

@@ -1,0 +1,247 @@
+---
+alwaysApply: true
+description: "Clerk authentication and user data security patterns"
+---
+
+# Clerk Authentication & User Data Security
+
+## Overview
+FlashyCardy uses **Clerk** for authentication. ALL data access MUST be user-scoped to prevent unauthorized access to other users' data.
+
+## Critical Security Requirements
+
+### 1. Authentication Check
+EVERY API route and data operation MUST verify user authentication:
+
+```typescript
+import { auth } from "@clerk/nextjs/server";
+
+// ✅ Required pattern for all API routes
+export async function GET() {
+  const { userId } = await auth();
+  
+  if (!userId) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+  
+  // Proceed with user-scoped operations...
+}
+```
+
+### 2. User Data Isolation
+ALL database queries MUST filter by authenticated user ID:
+
+```typescript
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/db";
+import { decksTable, cardsTable } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
+
+// ✅ Correct - Always filter by userId
+export async function getUserDecks() {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+  
+  return await db.select()
+    .from(decksTable)
+    .where(eq(decksTable.userId, userId));
+}
+
+// ✅ Correct - Verify ownership before accessing
+export async function getUserCard(cardId: string) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+  
+  return await db.select()
+    .from(cardsTable)
+    .innerJoin(decksTable, eq(cardsTable.deckId, decksTable.id))
+    .where(and(
+      eq(cardsTable.id, cardId),
+      eq(decksTable.userId, userId)  // Ensure user owns the deck
+    ));
+}
+```
+
+### 3. Forbidden Patterns
+❌ **NEVER** query data without user filtering:
+```typescript
+// ❌ FORBIDDEN - No user filtering
+const allDecks = await db.select().from(decksTable);
+
+// ❌ FORBIDDEN - Direct access without ownership check
+const card = await db.select().from(cardsTable).where(eq(cardsTable.id, cardId));
+```
+
+## Required Patterns
+
+### API Route Protection
+```typescript
+// src/app/api/decks/route.ts
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/db";
+import { decksTable, type NewDeck } from "@/db/schema";
+import { eq } from "drizzle-orm";
+
+export async function GET() {
+  const { userId } = await auth();
+  if (!userId) return new Response("Unauthorized", { status: 401 });
+  
+  const decks = await db.select()
+    .from(decksTable)
+    .where(eq(decksTable.userId, userId));
+    
+  return Response.json(decks);
+}
+
+export async function POST(request: Request) {
+  const { userId } = await auth();
+  if (!userId) return new Response("Unauthorized", { status: 401 });
+  
+  const body = await request.json();
+  const newDeck: NewDeck = {
+    ...body,
+    userId, // Always set from authenticated user
+  };
+  
+  const [deck] = await db.insert(decksTable).values(newDeck).returning();
+  return Response.json(deck);
+}
+```
+
+### Server Components
+```typescript
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/db";
+import { decksTable } from "@/db/schema";
+import { eq } from "drizzle-orm";
+
+export default async function DecksPage() {
+  const { userId } = await auth();
+  if (!userId) redirect("/sign-in");
+  
+  const decks = await db.select()
+    .from(decksTable)
+    .where(eq(decksTable.userId, userId));
+    
+  return <DecksList decks={decks} />;
+}
+```
+
+### Client Components
+```typescript
+import { useUser } from "@clerk/nextjs";
+
+export function UserDashboard() {
+  const { user, isLoaded } = useUser();
+  
+  if (!isLoaded) return <Loading />;
+  if (!user) return <SignInPrompt />;
+  
+  // Component logic with authenticated user...
+}
+```
+
+### Middleware Configuration
+Ensure [middleware.ts](mdc:src/middleware.ts) protects routes:
+
+```typescript
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+
+const isProtectedRoute = createRouteMatcher([
+  "/dashboard(.*)",
+  "/api/decks(.*)",
+  "/api/cards(.*)",
+]);
+
+export default clerkMiddleware((auth, req) => {
+  if (isProtectedRoute(req)) auth().protect();
+});
+```
+
+## Data Ownership Verification
+
+### Before Updates/Deletes
+ALWAYS verify ownership before modifying data:
+
+```typescript
+export async function updateDeck(deckId: string, updates: Partial<Deck>) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+  
+  // ✅ Verify ownership first
+  const [existingDeck] = await db.select()
+    .from(decksTable)
+    .where(and(
+      eq(decksTable.id, deckId),
+      eq(decksTable.userId, userId)
+    ));
+    
+  if (!existingDeck) {
+    throw new Error("Deck not found or access denied");
+  }
+  
+  // Proceed with update
+  return await db.update(decksTable)
+    .set({ ...updates, updatedAt: new Date() })
+    .where(eq(decksTable.id, deckId))
+    .returning();
+}
+```
+
+### Cross-Resource Access
+When accessing cards through decks, verify ownership chain:
+
+```typescript
+export async function getCardsByDeck(deckId: string) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+  
+  // ✅ Join with deck to verify user ownership
+  return await db.select({
+    card: cardsTable,
+    deck: decksTable
+  })
+  .from(cardsTable)
+  .innerJoin(decksTable, eq(cardsTable.deckId, decksTable.id))
+  .where(and(
+    eq(decksTable.id, deckId),
+    eq(decksTable.userId, userId)  // Critical: verify user owns deck
+  ));
+}
+```
+
+## Error Handling
+
+### Consistent Error Responses
+```typescript
+// ✅ Standard unauthorized response
+if (!userId) {
+  return new Response("Unauthorized", { status: 401 });
+}
+
+// ✅ Standard not found/access denied
+if (!resource) {
+  return new Response("Not found", { status: 404 });
+}
+```
+
+## Best Practices
+
+1. **Always authenticate first** - Check `userId` before any data operation
+2. **Filter by user** - Every query must include user-based filtering
+3. **Verify ownership** - For updates/deletes, confirm user owns the resource
+4. **Use joins** - When accessing related data, join with user ownership tables
+5. **Consistent errors** - Return appropriate HTTP status codes
+6. **Type safety** - Use Drizzle schema types for all database operations
+
+## Migration & Seeds
+When creating seed data or migrations, ensure proper user associations:
+
+```typescript
+// ✅ Seed data with user references
+const seedDecks: NewDeck[] = [
+  { userId: "user_example123", name: "Sample Deck", description: "..." },
+];
+```
+
+Remember: **No data should ever be accessible without proper user authentication and ownership verification.**
