@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription, DialogHeader } from "@/components/ui/dialog";
 import { SignIn, SignUp, SignedIn, SignedOut } from "@clerk/nextjs";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
@@ -24,8 +24,15 @@ export default function Home() {
                 Sign In
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Welcome back</DialogTitle>
+                <DialogDescription>
+                  Sign in to your FlashyCardy account to continue studying.
+                </DialogDescription>
+              </DialogHeader>
               <SignIn 
+                routing="hash"
                 forceRedirectUrl="/dashboard"
                 fallbackRedirectUrl="/dashboard"
               />
@@ -37,8 +44,15 @@ export default function Home() {
                 Sign Up
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Create your account</DialogTitle>
+                <DialogDescription>
+                  Join FlashyCardy to start creating and studying flashcards.
+                </DialogDescription>
+              </DialogHeader>
               <SignUp 
+                routing="hash"
                 forceRedirectUrl="/dashboard"
                 fallbackRedirectUrl="/dashboard"
               />

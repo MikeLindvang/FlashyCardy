@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getUserDecks } from "@/db/queries/deck-queries";
 import { type Deck } from "@/db/schema";
 import { Button } from "@/components/ui/button";
@@ -107,29 +108,26 @@ export default async function DashboardPage() {
         ) : (
           <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {decks.map((deck) => (
-              <Card key={deck.id} className="hover:shadow-md transition-shadow cursor-pointer">
-                <CardHeader>
-                  <section className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{deck.name}</CardTitle>
-                    <Badge variant="outline">0 cards</Badge>
-                  </section>
-                  {deck.description && (
-                    <CardDescription className="line-clamp-2">
-                      {deck.description}
-                    </CardDescription>
-                  )}
-                </CardHeader>
-                <CardContent>
-                  <section className="flex items-center justify-between text-sm text-muted-foreground">
+              <Link key={deck.id} href={`/decks/${deck.id}`} className="block">
+                <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                  <CardHeader>
+                    <section className="flex items-center justify-between">
+                      <CardTitle className="text-lg">{deck.name}</CardTitle>
+                      <Badge variant="outline">0 cards</Badge>
+                    </section>
+                    {deck.description && (
+                      <CardDescription className="line-clamp-2">
+                        {deck.description}
+                      </CardDescription>
+                    )}
+                  </CardHeader>
+                  <CardContent>
                     <CardDescription className="text-sm">
-                      Created {new Date(deck.createdAt).toLocaleDateString()}
+                      Updated {new Date(deck.updatedAt).toLocaleDateString()}
                     </CardDescription>
-                    <Button variant="ghost" size="sm">
-                      Study
-                    </Button>
-                  </section>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
           </section>
         )}
