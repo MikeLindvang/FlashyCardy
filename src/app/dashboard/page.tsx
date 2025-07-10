@@ -1,8 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { db } from "@/db";
-import { decksTable } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { getUserDecks } from "@/db/queries/deck-queries";
+import { type Deck } from "@/db/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,14 +13,11 @@ export default async function DashboardPage() {
   const { userId } = await auth();
   
   if (!userId) {
-    redirect("/sign-in");
+    redirect("/");
   }
 
-  // Fetch user's decks with proper user filtering
-  const decks = await db.select()
-    .from(decksTable)
-    .where(eq(decksTable.userId, userId))
-    .orderBy(decksTable.updatedAt);
+  // Fetch user's decks using query helper
+  const decks = await getUserDecks(userId);
 
   return (
     <main className="container mx-auto px-4 py-8">

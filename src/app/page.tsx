@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { SignInButton, SignUpButton, SignedIn, SignedOut } from "@clerk/nextjs";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { SignIn, SignUp, SignedIn, SignedOut } from "@clerk/nextjs";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
@@ -17,16 +18,32 @@ export default function Home() {
       
       <SignedOut>
         <div className="flex flex-col sm:flex-row gap-4 mt-8">
-          <SignInButton mode="modal">
-            <Button size="lg" className="w-full sm:w-auto">
-              Sign In
-            </Button>
-          </SignInButton>
-          <SignUpButton mode="modal">
-            <Button variant="outline" size="lg" className="w-full sm:w-auto">
-              Sign Up
-            </Button>
-          </SignUpButton>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button size="lg" className="w-full sm:w-auto">
+                Sign In
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <SignIn 
+                forceRedirectUrl="/dashboard"
+                fallbackRedirectUrl="/dashboard"
+              />
+            </DialogContent>
+          </Dialog>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="lg" className="w-full sm:w-auto">
+                Sign Up
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <SignUp 
+                forceRedirectUrl="/dashboard"
+                fallbackRedirectUrl="/dashboard"
+              />
+            </DialogContent>
+          </Dialog>
         </div>
       </SignedOut>
       

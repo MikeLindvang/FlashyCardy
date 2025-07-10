@@ -16,7 +16,7 @@ export default clerkMiddleware(async (auth, req) => {
   // Protect dashboard routes
   if (isProtectedRoute(req)) {
     if (!userId) {
-      return NextResponse.redirect(new URL("/sign-in", req.url));
+      return NextResponse.redirect(new URL("/", req.url));
     }
   }
 });

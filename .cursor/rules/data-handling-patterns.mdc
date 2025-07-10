@@ -1,7 +1,6 @@
 ---
 alwaysApply: true
 ---
-
 # Data Handling Patterns
 
 ## Overview
@@ -9,24 +8,189 @@ FlashyCardy follows strict server-side data patterns to ensure security, perform
 
 ## Critical Requirements
 
-### 1. Data Retrieval: Server Components Only
-ALL data fetching MUST be performed in Server Components, never in Client Components:
+### 1. Data Abstraction: db/queries Directory Required
+ALL data operations MUST be abstracted into helper functions located in the `db/queries` directory. NO direct database operations should be performed in pages, components, or Server Actions:
 
 ```typescript
-// ✅ CORRECT - Server Component data fetching
-import { auth } from "@clerk/nextjs/server";
+// ✅ CORRECT - Query helper functions in db/queries/deck-queries.ts
 import { db } from "@/db";
-import { decksTable } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { decksTable, cardsTable, type NewDeck, type Deck } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
+
+export async function getUserDecks(userId: string) {
+  return await db.select()
+    .from(decksTable)
+    .where(eq(decksTable.userId, userId));
+}
+
+export async function getDeckWithCards(deckId: string, userId: string) {
+  const [deck] = await db.select()
+    .from(decksTable)
+    .where(and(eq(decksTable.id, deckId), eq(decksTable.userId, userId)));
+    
+  if (!deck) return null;
+  
+  const cards = await db.select()
+    .from(cardsTable)
+    .where(eq(cardsTable.deckId, deckId));
+    
+  return { ...deck, cards };
+}
+
+export async function createDeck(deckData: NewDeck) {
+  const [newDeck] = await db.insert(decksTable)
+    .values(deckData)
+    .returning();
+  return newDeck;
+}
+
+export async function updateDeck(deckId: string, updates: Partial<Deck>) {
+  const [updatedDeck] = await db.update(decksTable)
+    .set({ ...updates, updatedAt: new Date() })
+    .where(eq(decksTable.id, deckId))
+    .returning();
+  return updatedDeck;
+}
+
+export async function deleteDeck(deckId: string) {
+  await db.delete(decksTable)
+    .where(eq(decksTable.id, deckId));
+}
+```
+
+```typescript
+// ✅ CORRECT - Using query helpers in Server Components
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import { getUserDecks } from "@/db/queries/deck-queries";
 
 export default async function DecksPage() {
   const { userId } = await auth();
-  if (!userId) redirect("/sign-in");
+  if (!userId) redirect("/");
   
-  // Data fetching in Server Component
+  // Use query helper instead of direct DB calls
+  const decks = await getUserDecks(userId);
+    
+  return <DecksList decks={decks} />;
+}
+```
+
+```typescript
+// ✅ CORRECT - Using query helpers in Server Actions
+import { auth } from "@clerk/nextjs/server";
+import { createDeck, getDeckWithCards } from "@/db/queries/deck-queries";
+import { revalidatePath } from "next/cache";
+
+export async function createDeckAction(input: CreateDeckInput) {
+  const validatedData = CreateDeckSchema.parse(input);
+  
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+  
+  // Use query helper instead of direct DB calls
+  const newDeck = await createDeck({ ...validatedData, userId });
+  
+  revalidatePath("/decks");
+  return newDeck;
+}
+```
+
+```typescript
+// ❌ FORBIDDEN - Direct database operations in pages/components
+export default async function DecksPage() {
+  const { userId } = await auth();
+  if (!userId) redirect("/");
+  
+  // ❌ DON'T perform direct DB operations
   const decks = await db.select()
     .from(decksTable)
     .where(eq(decksTable.userId, userId));
+    
+  return <DecksList decks={decks} />;
+}
+```
+
+```typescript
+// ❌ FORBIDDEN - Direct database operations in Server Actions
+export async function createDeckAction(input: CreateDeckInput) {
+  // ❌ DON'T perform direct DB operations
+  const newDeck: NewDeck = { ...validatedData, userId };
+  await db.insert(decksTable).values(newDeck);
+  
+  revalidatePath("/decks");
+}
+```
+
+#### Required Query File Structure
+```
+src/
+└── db/
+    ├── index.ts           # Database connection
+    ├── schema.ts          # Drizzle schema definitions
+    └── queries/           # Query helper functions
+        ├── deck-queries.ts    # All deck-related operations
+        ├── card-queries.ts    # All card-related operations
+```
+
+#### Query Helper Guidelines
+- **One file per entity** (decks, cards)
+- **Export specific functions** for each operation (get, create, update, delete)
+- **Include ownership validation** within query helpers when applicable
+- **Return typed results** using schema types
+- **Handle edge cases** (not found, etc.) within helpers
+- **Use transactions** for multi-table operations
+- **Keep queries focused** - one responsibility per function
+
+### 2. Authentication: Redirect to Home Page
+ALL protected pages MUST check authentication and redirect unauthenticated users to the home page (`/`):
+
+```typescript
+// ✅ CORRECT - Authentication check with home page redirect
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+
+export default async function ProtectedPage() {
+  const { userId } = await auth();
+  if (!userId) redirect("/");
+  
+  // Protected page content
+  return <div>Protected content for user: {userId}</div>;
+}
+```
+
+```typescript
+// ❌ FORBIDDEN - No authentication check
+export default async function ProtectedPage() {
+  // ❌ Missing authentication check
+  return <div>Unprotected content</div>;
+}
+```
+
+```typescript
+// ❌ FORBIDDEN - Redirect to sign-in page
+export default async function ProtectedPage() {
+  const { userId } = await auth();
+  if (!userId) redirect("/sign-in"); // ❌ Don't redirect to sign-in
+  
+  return <div>Content</div>;
+}
+```
+
+### 3. Data Retrieval: Server Components Only
+ALL data fetching MUST be performed in Server Components, never in Client Components:
+
+```typescript
+// ✅ CORRECT - Server Component data fetching with query helpers
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import { getUserDecks } from "@/db/queries/deck-queries";
+
+export default async function DecksPage() {
+  const { userId } = await auth();
+  if (!userId) redirect("/");
+  
+  // Data fetching using query helper
+  const decks = await getUserDecks(userId);
     
   return <DecksList decks={decks} />;
 }
@@ -49,41 +213,34 @@ export function DecksPage() {
 }
 ```
 
-### 2. Data Mutations: Server Actions Only
+### 4. Data Mutations: Server Actions Only
 ALL create, update, delete operations MUST use Server Actions:
 
 ```typescript
-// ✅ CORRECT - Server Action for mutations
+// ✅ CORRECT - Server Action for mutations using query helpers
 import { auth } from "@clerk/nextjs/server";
-import { db } from "@/db";
-import { decksTable, type NewDeck } from "@/db/schema";
+import { createDeck, updateDeck, getDeckByIdAndUser } from "@/db/queries/deck-queries";
 import { revalidatePath } from "next/cache";
 
-export async function createDeck(data: NewDeck) {
+export async function createDeckAction(data: NewDeck) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
   
   const newDeck: NewDeck = { ...data, userId };
-  await db.insert(decksTable).values(newDeck);
+  await createDeck(newDeck);
   
   revalidatePath("/decks");
 }
 
-export async function updateDeck(deckId: string, data: Partial<Deck>) {
+export async function updateDeckAction(deckId: string, data: Partial<Deck>) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
   
-  // Verify ownership
-  const [existingDeck] = await db.select()
-    .from(decksTable)
-    .where(and(eq(decksTable.id, deckId), eq(decksTable.userId, userId)));
-    
+  // Verify ownership using query helper
+  const existingDeck = await getDeckByIdAndUser(deckId, userId);
   if (!existingDeck) throw new Error("Deck not found");
   
-  await db.update(decksTable)
-    .set({ ...data, updatedAt: new Date() })
-    .where(eq(decksTable.id, deckId));
-    
+  await updateDeck(deckId, data);
   revalidatePath("/decks");
 }
 ```
@@ -97,7 +254,7 @@ export async function POST(request: Request) {
 }
 ```
 
-### 3. Data Validation: Zod Required
+### 5. Data Validation: Zod Required
 ALL data passed to Server Actions MUST be validated with Zod schemas:
 
 ```typescript
@@ -142,7 +299,7 @@ export async function createDeck(data: any) {
 }
 ```
 
-### 4. Form Handling Pattern
+### 6. Form Handling Pattern
 Use this pattern for forms with Server Actions:
 
 ```typescript
@@ -267,6 +424,13 @@ export async function createDeck(input: CreateDeckInput) {
 
 ## Forbidden Patterns
 
+❌ **Direct database operations outside query helpers**:
+```typescript
+// DON'T perform direct Drizzle queries in pages/components
+// DON'T perform direct Drizzle queries in Server Actions
+// DON'T bypass the db/queries abstraction layer
+```
+
 ❌ **Client-side data fetching**:
 ```typescript
 // DON'T use useEffect for data fetching
@@ -295,23 +459,31 @@ export async function createDeck(input: CreateDeckInput) {
 
 ## Best Practices
 
-1. **Co-locate Server Actions** with the components that use them
-2. **Use revalidatePath()** after all mutations to update cached data
-3. **Handle validation errors** gracefully in Client Components
-4. **Use TypeScript types** derived from Zod schemas (`z.infer<>`)
-5. **Verify user ownership** before any data operations
-6. **Use transactions** for multi-table operations
-7. **Return structured results** from Server Actions for error handling
+1. **Always use query helpers** from `db/queries` directory for all data operations
+2. **Organize query helpers** by entity (one file per table/domain)
+3. **Always check authentication** first in protected pages and redirect to home page (`/`) if not authenticated
+4. **Co-locate Server Actions** with the components that use them
+5. **Use revalidatePath()** after all mutations to update cached data
+6. **Handle validation errors** gracefully in Client Components
+7. **Use TypeScript types** derived from Zod schemas (`z.infer<>`)
+8. **Verify user ownership** within query helpers when applicable
+9. **Use transactions** for multi-table operations within query helpers
+10. **Return structured results** from Server Actions for error handling
+11. **Keep query functions focused** - one responsibility per function
+12. **Include error handling** within query helpers for edge cases
 
 ## Migration from Client-side Patterns
 
 When refactoring existing code:
 
-1. **Move data fetching** from `useEffect` to Server Components
-2. **Convert API routes** to Server Actions for mutations
-3. **Add Zod validation** to all data inputs
-4. **Replace FormData** parameters with typed objects
-5. **Add revalidatePath()** calls after mutations
-6. **Update error handling** to work with Server Action patterns
+1. **Create query helpers** in `db/queries` directory for all data operations
+2. **Replace direct database calls** with query helper functions
+3. **Move data fetching** from `useEffect` to Server Components
+4. **Convert API routes** to Server Actions for mutations
+5. **Add Zod validation** to all data inputs
+6. **Replace FormData** parameters with typed objects
+7. **Add revalidatePath()** calls after mutations
+8. **Update error handling** to work with Server Action patterns
+9. **Organize query helpers** by entity with focused responsibilities
 
-Remember: **All data operations must follow server-side patterns with proper validation and type safety.**
+Remember: **All data operations must use query helpers with proper validation and type safety.**

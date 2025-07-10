@@ -1,8 +1,6 @@
 ---
-alwaysApply: true
-description: "Clerk authentication and user data security patterns"
+alwaysApply: false
 ---
-
 # Clerk Authentication & User Data Security
 
 ## Overview
@@ -117,7 +115,7 @@ import { eq } from "drizzle-orm";
 
 export default async function DecksPage() {
   const { userId } = await auth();
-  if (!userId) redirect("/sign-in");
+  if (!userId) redirect("/");
   
   const decks = await db.select()
     .from(decksTable)
