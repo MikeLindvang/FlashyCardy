@@ -32,7 +32,8 @@ export async function getDeckWithCards(deckId: number, userId: string) {
   
   const cards = await db.select()
     .from(cardsTable)
-    .where(eq(cardsTable.deckId, deckId));
+    .where(eq(cardsTable.deckId, deckId))
+    .orderBy(desc(cardsTable.updatedAt));
     
   return { ...deck, cards };
 }

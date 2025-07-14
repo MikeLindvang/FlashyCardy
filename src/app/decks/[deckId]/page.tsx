@@ -5,9 +5,11 @@ import { getDeckWithCards } from "@/db/queries/deck-queries";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Plus, BookOpen, Calendar, Edit, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, BookOpen, Calendar, Edit } from "lucide-react";
 import { AddCardForm } from "./add-card-form";
 import { EditDeckForm } from "./edit-deck-form";
+import { EditCardForm } from "./edit-card-form";
+import { DeleteCardForm } from "./delete-card-form";
 
 interface DeckPageProps {
   params: Promise<{
@@ -165,12 +167,8 @@ export default async function DeckPage({ params }: DeckPageProps) {
                       {card.front}
                     </CardTitle>
                     <div className="flex items-center gap-1 ml-2">
-                      <Button variant="ghost" size="sm">
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                      <EditCardForm card={card} deckId={deckIdNumber} />
+                      <DeleteCardForm card={card} deckId={deckIdNumber} />
                     </div>
                   </div>
                 </CardHeader>
@@ -179,7 +177,7 @@ export default async function DeckPage({ params }: DeckPageProps) {
                     {card.back}
                   </CardDescription>
                   <CardDescription className="text-xs">
-                    Created {new Date(card.createdAt).toLocaleDateString()}
+                    Updated {new Date(card.updatedAt || card.createdAt).toLocaleDateString()}
                   </CardDescription>
                 </CardContent>
               </Card>

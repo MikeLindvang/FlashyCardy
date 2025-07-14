@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
-import { createCard } from "@/db/queries/card-queries";
+import { createCard, updateCardByIdAndDeckOwner, deleteCardByIdAndDeckOwner } from "@/db/queries/card-queries";
 import { getDeckByIdAndUser, updateDeck } from "@/db/queries/deck-queries";
 import { type NewCard } from "@/db/schema";
 
@@ -26,6 +26,26 @@ const UpdateDeckSchema = z.object({
 
 // Extract TypeScript type from schema
 type UpdateDeckInput = z.infer<typeof UpdateDeckSchema>;
+
+// Zod schema for card update
+const UpdateCardSchema = z.object({
+  id: z.number().int().positive("Invalid card ID"),
+  front: z.string().min(1, "Front text is required").max(1000, "Front text too long"),
+  back: z.string().min(1, "Back text is required").max(1000, "Back text too long"),
+  deckId: z.number().int().positive("Invalid deck ID"),
+});
+
+// Extract TypeScript type from schema
+type UpdateCardInput = z.infer<typeof UpdateCardSchema>;
+
+// Zod schema for card deletion
+const DeleteCardSchema = z.object({
+  id: z.number().int().positive("Invalid card ID"),
+  deckId: z.number().int().positive("Invalid deck ID"),
+});
+
+// Extract TypeScript type from schema
+type DeleteCardInput = z.infer<typeof DeleteCardSchema>;
 
 export async function createCardAction(input: CreateCardInput) {
   try {
@@ -110,5 +130,76 @@ export async function updateDeckAction(input: UpdateDeckInput) {
     
     console.error("Failed to update deck:", error);
     return { success: false, error: "Failed to update deck" };
+  }
+}
+
+export async function updateCardAction(input: UpdateCardInput) {
+  try {
+    // Validate input data
+    const validatedData = UpdateCardSchema.parse(input);
+    
+    // Check authentication
+    const { userId } = await auth();
+    if (!userId) {
+      return { success: false, error: "Unauthorized" };
+    }
+    
+    // Update the card with ownership validation
+    const updatedCard = await updateCardByIdAndDeckOwner(
+      validatedData.id, 
+      userId, 
+      {
+        front: validatedData.front,
+        back: validatedData.back,
+      }
+    );
+    
+    // Revalidate the deck page to show the updated card
+    revalidatePath(`/decks/${validatedData.deckId}`);
+    
+    return { success: true, card: updatedCard };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { 
+        success: false, 
+        error: "Invalid input", 
+        errors: error.errors 
+      };
+    }
+    
+    console.error("Failed to update card:", error);
+    return { success: false, error: "Failed to update card" };
+  }
+}
+
+export async function deleteCardAction(input: DeleteCardInput) {
+  try {
+    // Validate input data
+    const validatedData = DeleteCardSchema.parse(input);
+    
+    // Check authentication
+    const { userId } = await auth();
+    if (!userId) {
+      return { success: false, error: "Unauthorized" };
+    }
+    
+    // Delete the card with ownership validation
+    await deleteCardByIdAndDeckOwner(validatedData.id, userId);
+    
+    // Revalidate the deck page to show the updated card list
+    revalidatePath(`/decks/${validatedData.deckId}`);
+    
+    return { success: true };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { 
+        success: false, 
+        error: "Invalid input", 
+        errors: error.errors 
+      };
+    }
+    
+    console.error("Failed to delete card:", error);
+    return { success: false, error: "Failed to delete card" };
   }
 } 
