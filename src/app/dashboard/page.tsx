@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Plus, BookOpen, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CreateDeckDialog } from "./create-deck-dialog";
 
 export default async function DashboardPage() {
   // Check authentication - redirect if not authenticated
@@ -31,10 +32,7 @@ export default async function DashboardPage() {
               Manage your flashcard decks and track your progress
             </CardDescription>
           </section>
-          <Button size="lg" className="gap-2">
-            <Plus className="h-4 w-4" />
-            Create New Deck
-          </Button>
+          <CreateDeckDialog />
         </CardHeader>
       </Card>
 
@@ -99,10 +97,12 @@ export default async function DashboardPage() {
               <CardDescription className="text-center mb-4">
                 Create your first flashcard deck to get started with studying
               </CardDescription>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                Create Your First Deck
-              </Button>
+              <CreateDeckDialog>
+                <Button className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Create Your First Deck
+                </Button>
+              </CreateDeckDialog>
             </CardContent>
           </Card>
         ) : (

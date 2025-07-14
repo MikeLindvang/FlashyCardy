@@ -3,8 +3,9 @@
 import { z } from "zod";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
-import { createCard, updateCardByIdAndDeckOwner, deleteCardByIdAndDeckOwner } from "@/db/queries/card-queries";
-import { getDeckByIdAndUser, updateDeck } from "@/db/queries/deck-queries";
+import { redirect } from "next/navigation";
+import { createCard, updateCardByIdAndDeckOwner, deleteCardByIdAndDeckOwner, deleteCardsByDeckId } from "@/db/queries/card-queries";
+import { getDeckByIdAndUser, updateDeck, deleteDeckByIdAndUser } from "@/db/queries/deck-queries";
 import { type NewCard } from "@/db/schema";
 
 // Zod schema for card creation
@@ -46,6 +47,14 @@ const DeleteCardSchema = z.object({
 
 // Extract TypeScript type from schema
 type DeleteCardInput = z.infer<typeof DeleteCardSchema>;
+
+// Zod schema for deck deletion
+const DeleteDeckSchema = z.object({
+  id: z.number().int().positive("Invalid deck ID"),
+});
+
+// Extract TypeScript type from schema
+type DeleteDeckInput = z.infer<typeof DeleteDeckSchema>;
 
 export async function createCardAction(input: CreateCardInput) {
   try {
@@ -202,4 +211,36 @@ export async function deleteCardAction(input: DeleteCardInput) {
     console.error("Failed to delete card:", error);
     return { success: false, error: "Failed to delete card" };
   }
+}
+
+export async function deleteDeckAction(input: DeleteDeckInput) {
+  // Validate input data
+  const validatedData = DeleteDeckSchema.parse(input);
+  
+  // Check authentication
+  const { userId } = await auth();
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+  
+  // Verify deck ownership
+  const existingDeck = await getDeckByIdAndUser(validatedData.id, userId);
+  if (!existingDeck) {
+    throw new Error("Deck not found or access denied");
+  }
+  
+  try {
+    // Delete all cards first, then delete the deck
+    await deleteCardsByDeckId(validatedData.id);
+    await deleteDeckByIdAndUser(validatedData.id, userId);
+  } catch (error) {
+    console.error("Failed to delete deck:", error);
+    throw new Error("Failed to delete deck");
+  }
+  
+  // Revalidate the dashboard to remove the deleted deck
+  revalidatePath("/dashboard");
+  
+  // Redirect to dashboard after successful deletion
+  redirect("/dashboard");
 } 

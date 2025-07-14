@@ -10,6 +10,7 @@ import { AddCardForm } from "./add-card-form";
 import { EditDeckForm } from "./edit-deck-form";
 import { EditCardForm } from "./edit-card-form";
 import { DeleteCardForm } from "./delete-card-form";
+import { DeleteDeckDialog } from "./delete-deck-dialog";
 
 interface DeckPageProps {
   params: Promise<{
@@ -77,6 +78,7 @@ export default async function DeckPage({ params }: DeckPageProps) {
           </section>
           <div className="flex items-center gap-2">
             <EditDeckForm deck={deck} />
+            <DeleteDeckDialog deck={deck} cardCount={cards.length} />
           </div>
         </CardHeader>
       </Card>
