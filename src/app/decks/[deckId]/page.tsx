@@ -121,10 +121,12 @@ export default async function DeckPage({ params }: DeckPageProps) {
               </CardDescription>
             </CardHeader>
             <CardContent className="flex gap-4">
-              <Button size="lg" className="gap-2">
-                <BookOpen className="h-4 w-4" />
-                Start Study Session
-              </Button>
+              <Link href={`/decks/${deckIdNumber}/study`}>
+                <Button size="lg" className="gap-2">
+                  <BookOpen className="h-4 w-4" />
+                  Start Study Session
+                </Button>
+              </Link>
               <Button variant="outline" size="lg">
                 Practice Mode
               </Button>
