@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface AddCardFormProps {
   deckId: number;
@@ -22,13 +23,11 @@ export function AddCardForm({ deckId, variant = "default", size = "sm", children
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsLoading(true);
     setError(null);
-    setSuccess(false);
 
     const formData = new FormData(event.currentTarget);
     const input = {
@@ -41,14 +40,11 @@ export function AddCardForm({ deckId, variant = "default", size = "sm", children
       const result = await createCardAction(input);
       
       if (result.success) {
-        setSuccess(true);
+        toast.success(result.message || "Card added successfully!");
         // Reset form
         (event.target as HTMLFormElement).reset();
-        // Close dialog after a short delay to show success message
-        setTimeout(() => {
-          setIsOpen(false);
-          setSuccess(false);
-        }, 1500);
+        // Close dialog
+        setIsOpen(false);
       } else {
         setError(result.error || "Failed to create card");
       }
@@ -103,12 +99,6 @@ export function AddCardForm({ deckId, variant = "default", size = "sm", children
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          {success && (
-            <Alert>
-              <AlertDescription>Card created successfully!</AlertDescription>
             </Alert>
           )}
 

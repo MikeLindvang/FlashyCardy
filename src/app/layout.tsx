@@ -9,6 +9,7 @@ import {
   UserButton,
 } from "@clerk/nextjs";
 import { dark } from "@clerk/themes";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -54,6 +55,7 @@ export default function RootLayout({
             </div>
           </header>
           <main>{children}</main>
+          <Toaster position="bottom-right" richColors />
         </body>
       </html>
     </ClerkProvider>

@@ -76,7 +76,7 @@ export async function createCardAction(input: CreateCardInput) {
     // Revalidate the deck page to show the new card
     revalidatePath(`/decks/${validatedData.deckId}`);
     
-    return { success: true, card: newCard };
+    return { success: true, card: newCard, message: "Card added successfully!" };
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { 
@@ -118,7 +118,7 @@ export async function updateDeckAction(input: UpdateDeckInput) {
     revalidatePath(`/decks/${validatedData.id}`);
     revalidatePath("/dashboard");
     
-    return { success: true, deck: updatedDeck };
+    return { success: true, deck: updatedDeck, message: "Deck updated successfully!" };
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { 
@@ -157,7 +157,7 @@ export async function updateCardAction(input: UpdateCardInput) {
     // Revalidate the deck page to show the updated card
     revalidatePath(`/decks/${validatedData.deckId}`);
     
-    return { success: true, card: updatedCard };
+    return { success: true, card: updatedCard, message: "Card updated successfully!" };
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { 
@@ -189,7 +189,7 @@ export async function deleteCardAction(input: DeleteCardInput) {
     // Revalidate the deck page to show the updated card list
     revalidatePath(`/decks/${validatedData.deckId}`);
     
-    return { success: true };
+    return { success: true, message: "Card deleted successfully!" };
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { 

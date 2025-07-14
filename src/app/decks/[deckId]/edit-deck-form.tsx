@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Edit } from "lucide-react";
 import { updateDeckAction } from "./actions";
 import { type Deck } from "@/db/schema";
+import { toast } from "sonner";
 
 interface EditDeckFormProps {
   deck: Deck;
@@ -44,6 +45,7 @@ export function EditDeckForm({ deck, children }: EditDeckFormProps) {
       });
 
       if (result.success) {
+        toast.success(result.message || "Deck updated successfully!");
         setOpen(false);
         // Reset form will happen when dialog closes
       } else {

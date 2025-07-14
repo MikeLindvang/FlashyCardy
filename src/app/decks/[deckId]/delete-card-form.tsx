@@ -16,6 +16,7 @@ import {
 import { Trash2 } from "lucide-react";
 import { deleteCardAction } from "./actions";
 import { type Card } from "@/db/schema";
+import { toast } from "sonner";
 
 interface DeleteCardFormProps {
   card: Card;
@@ -36,11 +37,13 @@ export function DeleteCardForm({ card, deckId }: DeleteCardFormProps) {
         deckId,
       });
 
-      if (!result.success) {
+      if (result.success) {
+        toast.success(result.message || "Card deleted successfully!");
+        // Page will revalidate and component will unmount
+      } else {
         setError(result.error || "Failed to delete card");
         setIsDeleting(false);
       }
-      // If successful, the page will revalidate and the component will unmount
     } catch (error) {
       console.error("Failed to delete card:", error);
       setError("An unexpected error occurred");

@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Edit } from "lucide-react";
 import { updateCardAction } from "./actions";
 import { type Card } from "@/db/schema";
+import { toast } from "sonner";
 
 interface EditCardFormProps {
   card: Card;
@@ -45,6 +46,7 @@ export function EditCardForm({ card, deckId }: EditCardFormProps) {
       });
 
       if (result.success) {
+        toast.success(result.message || "Card updated successfully!");
         setOpen(false);
         // Reset form is handled by dialog close
       } else {
